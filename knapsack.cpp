@@ -1,6 +1,15 @@
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <chrono>
+
+#define ITEMS 4
+#define MAX 8
+
 using namespace std;
+using namespace std::chrono;
+
+// algorytm silowy
 
 void decToBin(int y, int arr[], int size)
 {
@@ -22,12 +31,14 @@ int current(int encrypted[], int val[], int size)
 	return w;
 }
 
-int bruteForce(int w[], int p[], int total, int n)
+vector<int> bruteForce(int w[], int p[], int total, int n)
 {
 	int max = 0, solution = 0;
+	vector<int> sol;
 	int* encrypt = new int[n];
+	int* best_binary = new int[n];
 	if (n == 0 || total == 0)
-		return 0;
+		return sol;
 	for (int x = 1; x < (int)pow(2, n); x++)
 	{
 		decToBin(x, encrypt, n);
@@ -36,13 +47,22 @@ int bruteForce(int w[], int p[], int total, int n)
 			if (current(encrypt, p, n) > max)
 			{
 				max = current(encrypt, p, n);
+				std::copy(encrypt, encrypt + n, best_binary);
 				solution = x;
 			}
 		}
 	}
+	for (int i = 0; i < n; i++)
+	{
+		if (best_binary[i] == 1)
+			sol.push_back(i + 1);
+	}
+	delete[] best_binary;
 	delete[] encrypt;
-	return max;
+	return sol;
 }
+
+// algorytm zachlanny
 
 void heapify(int arr[], double coef[], int n, int i)
 {
@@ -98,11 +118,53 @@ int greedy(int w[], int p[], int total, int n)
 	return full;
 }
 
+//algorytm programowania dynamicznego
+
+void fill(int** m, int w[], int p[])
+{
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 9; j++)
+		{
+			if (i == 0 || j == 0)
+				m[i][j] = 0;
+			else if (w[i - 1] > j)
+				m[i][j] = m[i - 1][j];
+			else
+				m[i][j] = std::max(m[i - 1][j], m[i - 1][j - w[i - 1]] + p[i - 1]);
+		}
+	}
+}
+
+vector<int> dpSolution(int** m, int w[], int j, int i)
+{
+	vector<int> sub;
+	while (i != 0)
+	{
+		if (m[i][j] > m[i - 1][j]) 
+		{
+			sub.push_back(i);
+			j -= w[i - 1];
+		}
+		i--;
+	}
+	return sub;
+}
+
 int main()
 {
-	int w[4] = { 2, 2, 4, 4 };
-	int p[4] = { 5, 3, 6, 12 };
-	int max = 8;
-	cout << "Wartosc brute force: " << greedy(w, p, max, sizeof(w) / sizeof(int)) << "\n";
-	cout << "Wartosc zachlanny: " << bruteForce(w, p, max, sizeof(w) / sizeof(int));
+	int w[ITEMS] = { 2, 1, 4, 4 };
+	int p[ITEMS] = { 4, 3, 6, 8 };
+	// macierz programowania dynamicznego
+	int** m = new int*[ITEMS + 1];
+	for (int i = 0; i < 5; i++)
+	{
+		m[i] = new int[MAX + 1];
+	}
+	fill(m, w, p);
+	vector<int> s = dpSolution(m, w, MAX, ITEMS);
+	for (int i = 0; i < s.size(); i++)
+	{
+		cout << "x" << s[i] << " ";
+	}
 }
